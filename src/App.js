@@ -58,7 +58,7 @@ class BooksApp extends React.Component {
   handleModify = (book, value)=>{
     BooksAPI.update( book, value).then(
         res => {
-            if(book.shelf && book.shelf !== 'none'){
+            if(book.shelf){
               let removedShelf = this.state.shelves[book.shelf];
               let removeIndx = removedShelf.indexOf(book);
               removedShelf.splice(removeIndx, 1);
@@ -74,7 +74,7 @@ class BooksApp extends React.Component {
                   shelves :{
                     ...this.state.shelves,
                     [book.shelf] : [...removedShelf],
-                    [value] : [...this.state.shelves[value], book]
+                    [value] : [...this.state.shelves[value], {...book, shelf : value}]
                   }
                  })
               }
