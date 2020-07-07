@@ -3,8 +3,7 @@ import * as BooksAPI from './BooksAPI';
 import {
   BrowserRouter as Router,
   Switch,
-  Route,
-  Link
+  Route
 } from "react-router-dom";
 import './App.css';
 import  HomePage  from './pages/home';
@@ -26,54 +25,70 @@ class BooksApp extends React.Component {
     })
   }
   searchBook = ( value ) => {
-    console.log('searchBook', value)
     if(value.length > 0 ){
       BooksAPI.search(value).then(
         res => {
           if(res.error){
-            console.log('no books match ur query');
             this.searchArrayReset();
+          }else{
+            let MyShelves = [];
+             Object.keys(this.state.shelves).forEach((key)=> { 
+              MyShelves = [...MyShelves ,...this.state.shelves[key]];
+            }); 
+            let searchResult = res.map(book => {
+              let mapIndx = MyShelves.findIndex(selfRec => selfRec.id === book.id);
+              if (mapIndx !== -1){
+                return MyShelves[mapIndx];
+              }
+              else {
+                return book;
+              }
+            })
+            this.setState({
+              searched: [...searchResult]
+            })
           }
-          console.log(res);
-          this.setState({
-            searched: [...res]
-          },console.log('searched...',this.state.searched))
         }
       )
     }
-    console.log("less than 0")
     this.searchArrayReset();
    
   };
 
   handleModify = (book, value)=>{
-    // console.log('book',book);
-    // console.log('value',value);
-    debugger;
     BooksAPI.update( book, value).then(
         res => {
-          if(book.shelf){
-            let removedShelf = this.state.shelves[book.shelf];
-            let removeIndx = removedShelf.indexOf(book);
-            removedShelf.splice(removeIndx, 1);
-            this.setState ({
-              shelves :{
-                ...this.state.shelves,
-                [book.shelf] : [...removedShelf],
-                [value] : [...this.state.shelves[value], book]
+            if(book.shelf && book.shelf !== 'none'){
+              let removedShelf = this.state.shelves[book.shelf];
+              let removeIndx = removedShelf.indexOf(book);
+              removedShelf.splice(removeIndx, 1);
+              if(value === 'none'){
+                this.setState ({
+                  shelves :{
+                    ...this.state.shelves,
+                    [book.shelf] : [...removedShelf]
+                  }
+                 })
+              } else {
+                this.setState ({
+                  shelves :{
+                    ...this.state.shelves,
+                    [book.shelf] : [...removedShelf],
+                    [value] : [...this.state.shelves[value], book]
+                  }
+                 })
               }
-             })
-          }else {
-            this.setState ({
-              shelves :{
-                ...this.state.shelves,
-                [value] : [...this.state.shelves[value], {...book, shelf : value}]
-              }
-             })
-          }
+            
+            }else {
+              this.setState ({
+                shelves :{
+                  ...this.state.shelves,
+                  [value] : [...this.state.shelves[value], {...book, shelf : value}]
+                }
+               })
+            }
         }
     )
-        // console.log('ModifyShelf',book ,value )
   }
 
   componentDidMount(){
@@ -108,14 +123,10 @@ class BooksApp extends React.Component {
                 <HomePage 
                 shelves = {this.state.shelves}
                 modify ={this.handleModify}
+                reset ={this.searchArrayReset}
                 />
               </Route>
             </Switch>
-            <div className="open-search">
-              <Link to='search'>
-                <button>Add a book</button>
-              </Link>
-            </div>
             </div>
         </Router>
     )
